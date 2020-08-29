@@ -1,0 +1,23 @@
+#!/bin/bash
+
+filter='spamhaus'
+rundir='/home/ostrichbot/security/'
+download=$rundir'/'$filter'.list'
+url='https://www.spamhaus.org/drop/drop.txt'
+
+# get latest black list
+curl -G $url > $download
+
+# Create ipset rule
+ipset -N $filter nethash
+ipset flush $filter
+
+# Load into ipset
+while read line;
+do
+        ip_block="$(grep -oE '^([0-9]{1,3}\.){3}[0-9]{1,3}(/[0-9]{1,2})?' <<< $line)"
+        ipset -A $filter $ip_block
+done < $download
+
+# save ipset
+ipset save -file /etc/iptables/ipset

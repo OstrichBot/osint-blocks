@@ -1,0 +1,25 @@
+#!/bin/bash
+
+filter='abuseipdb'
+rundir='/home/ostrichbot/security/'
+download=$rundir'/'$filter'.list'
+url='https://api.abuseipdb.com/api/v2/blacklist'
+
+# get latest black list from abuseIPDB
+curl -G $url \
+  -d confidenceMinimum=60 \
+  -H "Key: c7ba302f3a364039c90eaadd6721c4f1bd091d85d590049aad5a716c5ad57a0079168011d96abd03" \
+  -H "Accept: text/plain" | sort > $download
+
+# Create ipset rule
+ipset -N $filter iphash
+ipset flush $filter
+
+# Load abusedipdb into ipset
+while read line;
+do
+        ipset -A abuseipdb $line
+done < $download
+
+# save ipset
+ipset save -file /etc/iptables/ipset
